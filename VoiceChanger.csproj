@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>VoiceChanger</AssemblyName>
+    <RootNamespace>VoiceChanger</RootNamespace>
+    <LangVersion>9.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Unity.Addressables">
+      <HintPath>/home/swarog/.local/share/Steam/steamapps/common/Gunner HEAT PC/Bin/GHPC_Data/Managed/Unity.Addressables.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.ResourceManager">
+      <HintPath>/home/swarog/.local/share/Steam/steamapps/common/Gunner HEAT PC/Bin/GHPC_Data/Managed/Unity.ResourceManager.dll</HintPath>
+    </Reference>
+    <Reference Include="MelonLoader">
+      <HintPath>/home/swarog/.local/share/Steam/steamapps/common/Gunner HEAT PC/Bin/MelonLoader/net6/MelonLoader.dll</HintPath>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>/home/swarog/.local/share/Steam/steamapps/common/Gunner HEAT PC/Bin/MelonLoader/net6/0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>/home/swarog/.local/share/Steam/steamapps/common/Gunner HEAT PC/Bin/GHPC_Data/Managed/Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>/home/swarog/.local/share/Steam/steamapps/common/Gunner HEAT PC/Bin/GHPC_Data/Managed/UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>/home/swarog/.local/share/Steam/steamapps/common/Gunner HEAT PC/Bin/GHPC_Data/Managed/UnityEngine.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
