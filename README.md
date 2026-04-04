@@ -118,6 +118,7 @@ These play when the commander spots a target and calls out the target type, ammo
 | `short.wav` | "Short!" round fell short |
 | `over.wav` | "Over!" round went over |
 | `doubtful.wav` | "Doubtful!" hit unclear |
+| `target.wav` | "Target!" |
 | `reengage.wav` | "Reengage!" |
 | `nexttarget.wav` | "Next target!" |
 | `ceasefire.wav` | "Cease fire!" |
