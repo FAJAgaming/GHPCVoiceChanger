@@ -103,6 +103,12 @@ This works in state subfolders too.
 | `gunnercoaxat.wav` | "Gunner, coax, AT team!" |
 | `gunnercoaxtruck.wav` | "Gunner, coax, truck!" |
 | `gunnercoaxchopper.wav` | "Gunner, coax, chopper!" |
+| `gunnermissiletank.wav` | "Gunner, missile, tank!" |
+| `gunnermissilepc.wav` | "Gunner, missile, APC!" |
+| `gunnermissiletroops.wav` | "Gunner, missile, troops!" |
+| `gunnermissileat.wav` | "Gunner, missile, AT team!" |
+| `gunnermissiletruck.wav` | "Gunner, missile, truck!" |
+| `gunnermissilechopper.wav` | "Gunner, missile, chopper!" |
 
 **German** — commander calls ammo type then target type as separate lines:
 
