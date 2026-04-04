@@ -138,7 +138,6 @@ These play when the commander spots a target and calls out the target type, ammo
 | `sabotready.wav` | "Sabot ready!" |
 | `identified.wav` | Loader identification callout |
 | `empty.wav` | "Empty!" ammo depleted |
-| `complete.wav` | Loading complete |
 | `az.wav` | Autoloader AZ carousel cycling |
 | `mz.wav` | Autoloader MZ cycling |
 
