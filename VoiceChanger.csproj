@@ -13,6 +13,9 @@
     <Reference Include="Unity.ResourceManager">
       <HintPath>/home/swarog/.local/share/Steam/steamapps/common/Gunner HEAT PC/Bin/GHPC_Data/Managed/Unity.ResourceManager.dll</HintPath>
     </Reference>
+    <Reference Include="FMODUnity">
+      <HintPath>/home/swarog/.local/share/Steam/steamapps/common/Gunner HEAT PC/Bin/GHPC_Data/Managed/FMODUnity.dll</HintPath>
+    </Reference>
     <Reference Include="MelonLoader">
       <HintPath>/home/swarog/.local/share/Steam/steamapps/common/Gunner HEAT PC/Bin/MelonLoader/net6/MelonLoader.dll</HintPath>
     </Reference>

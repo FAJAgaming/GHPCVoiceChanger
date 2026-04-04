@@ -1,12 +1,21 @@
 using MelonLoader;
+using MelonLoader.Utils;
 using HarmonyLib;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
+using System.IO;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using FMOD;
+using FMOD.Studio;
+using FMODUnity;
 using GHPC.Effects.Voices;
 using GHPC.Mission;
+using GHPC.Player;
+using GHPC.Crew;
 
 [assembly: MelonInfo(typeof(VoiceChanger.VoiceChangerMod), "VoiceChanger", "1.0.0", "swarog")]
 [assembly: MelonGame("", "Gunner, HEAT, PC!")]
@@ -19,11 +28,13 @@ namespace VoiceChanger
         {
             MelonLogger.Msg("VoiceChanger initialized.");
             Config.Init();
+            CustomVoiceManager.Init();
         }
 
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
         {
             VoiceHandlerPatch.CacheProtocols();
+            CustomVoiceManager.UpdateActiveVehicle();
         }
     }
 
@@ -31,12 +42,32 @@ namespace VoiceChanger
     {
         static MelonPreferences_Category _cat;
         public static Dictionary<string, MelonPreferences_Entry<string>> VehicleMap = new Dictionary<string, MelonPreferences_Entry<string>>();
+        public static Dictionary<string, MelonPreferences_Entry<bool>> MixedVoicelinesMap = new Dictionary<string, MelonPreferences_Entry<bool>>();
 
-        static MelonPreferences_Entry<string> Add(string key, string defaultNationality, string description)
+        static void Add(string key, string defaultNationality, string description)
         {
             var entry = _cat.CreateEntry(key, defaultNationality, description);
             VehicleMap[key] = entry;
-            return entry;
+            var mixed = _cat.CreateEntry(key + "_MixedVoicelines", true, description + " Mixed Voicelines");
+            MixedVoicelinesMap[key] = mixed;
+        }
+
+        public static bool IsCustomVoice(string value)
+        {
+            string v = value.Trim('"');
+            return v != "Russian" && v != "German" && v != "American";
+        }
+
+        public static string GetValue(MelonPreferences_Entry<string> entry)
+        {
+            return entry.Value.Trim('"');
+        }
+
+        public static bool GetMixedVoicelines(string key)
+        {
+            if (MixedVoicelinesMap.TryGetValue(key, out var entry))
+                return entry.Value;
+            return true;
         }
 
         public static void Init()
@@ -44,7 +75,6 @@ namespace VoiceChanger
             _cat = MelonPreferences.CreateCategory("GHPCVoiceChanger", "VoiceChanger - Vehicle Voice Settings");
             string R = "Russian", G = "German", A = "American";
 
-            // Soviet vehicles
             Add("T72",               G, "T-72");
             Add("T72M",              G, "T-72M (NVA)");
             Add("T72M1",             G, "T-72M1 (NVA)");
@@ -73,8 +103,6 @@ namespace VoiceChanger
             Add("BMP2",              G, "BMP-2 (NVA)");
             Add("BMP2_SA",           R, "BMP-2 (Soviet)");
             Add("PT76B",             G, "PT-76B (NVA)");
-
-            // West German vehicles
             Add("LEO1A1",            G, "Leopard 1A1");
             Add("LEO1A1A1",          G, "Leopard 1A1A1");
             Add("LEO1A1A2",          G, "Leopard 1A1A2");
@@ -89,8 +117,6 @@ namespace VoiceChanger
             Add("MARDERA1",          G, "Marder A1-");
             Add("MARDERA1_NO_ATGM",  G, "Marder A1 (no ATGM)");
             Add("MARDER1A2",         G, "Marder 1A2");
-
-            // US vehicles
             Add("M1",                A, "M1 Abrams");
             Add("M1IP",              A, "M1IP Abrams");
             Add("M60A1",             A, "M60A1");
@@ -106,6 +132,318 @@ namespace VoiceChanger
         }
     }
 
+    public static class CustomVoiceManager
+    {
+        public static string VoicePacksFolder;
+        public static string ActiveCustomFolder;
+        public static bool ActiveMixedVoicelines = true;
+        public static string ActiveVehicleKey;
+        public static Sound PendingSound;
+
+        static Dictionary<string, Dictionary<string, Sound>> _loadedSounds = new Dictionary<string, Dictionary<string, Sound>>();
+
+        // Cache: packFolder -> clipKey -> list of matching file paths
+        static Dictionary<string, Dictionary<string, List<string>>> _clipKeyToFiles = new Dictionary<string, Dictionary<string, List<string>>>();
+
+        // Cache: packFolder -> all files in pack (path -> normalizedName)
+        static Dictionary<string, Dictionary<string, string>> _packFiles = new Dictionary<string, Dictionary<string, string>>();
+
+        static readonly string[] _states = { "combat", "panicked", "regular", "calm" };
+
+        public static void Init()
+        {
+            VoicePacksFolder = Path.Combine(MelonEnvironment.ModsDirectory, "VoiceChanger");
+            Directory.CreateDirectory(VoicePacksFolder);
+            MelonLogger.Msg($"VoiceChanger voice packs folder: {VoicePacksFolder}");
+        }
+
+        public static void UpdateActiveVehicle()
+        {
+            var playerInput = PlayerInput.Instance;
+            if (playerInput == null || playerInput.CurrentPlayerUnit == null)
+            {
+                ActiveCustomFolder = null;
+                ActiveVehicleKey = null;
+                ActiveMixedVoicelines = true;
+                return;
+            }
+
+            string vehicleName = playerInput.CurrentPlayerUnit.gameObject.name;
+            string key = vehicleName.Split(' ')[0].Replace("(Clone)", "");
+            ActiveVehicleKey = key;
+
+            if (!Config.VehicleMap.TryGetValue(key, out var entry))
+            {
+                ActiveCustomFolder = null;
+                ActiveMixedVoicelines = true;
+                return;
+            }
+
+            string value = Config.GetValue(entry);
+            ActiveMixedVoicelines = Config.GetMixedVoicelines(key);
+
+            if (!Config.IsCustomVoice(value))
+            {
+                ActiveCustomFolder = null;
+                return;
+            }
+
+            ActiveCustomFolder = value;
+            MelonLogger.Msg($"Active custom voice folder: {ActiveCustomFolder}, mixed voicelines: {ActiveMixedVoicelines}");
+        }
+
+        // Normalize a string for matching: lowercase, remove underscores and numbers at end
+        static string Normalize(string s)
+        {
+            return s.ToLower().Replace("_", "");
+        }
+
+        // Extract state from clip key
+        static string GetState(string clipKey)
+        {
+            string[] parts = clipKey.Split('_');
+            for (int i = parts.Length - 1; i >= 0; i--)
+            {
+                if (int.TryParse(parts[i], out _)) continue;
+                string lower = parts[i].ToLower();
+                if (_states.Contains(lower)) return lower;
+                break;
+            }
+            return null;
+        }
+
+        // Build index of all files in pack folder
+        static Dictionary<string, string> GetPackFiles(string packFolder)
+        {
+            if (_packFiles.TryGetValue(ActiveCustomFolder, out var cached)) return cached;
+
+            var files = new Dictionary<string, string>(); // path -> normalizedBaseName
+            if (!Directory.Exists(packFolder)) return files;
+
+            foreach (var file in Directory.GetFiles(packFolder, "*", SearchOption.AllDirectories))
+            {
+                string ext = Path.GetExtension(file).ToLower();
+                if (ext != ".wav" && ext != ".ogg") continue;
+
+                // Get base name without number suffix and extension
+                string baseName = Path.GetFileNameWithoutExtension(file);
+                // Strip trailing _N number
+                var match = System.Text.RegularExpressions.Regex.Match(baseName, @"^(.+?)(_\d+)?$");
+                string actionName = match.Groups[1].Value;
+                files[file] = Normalize(actionName);
+            }
+
+            _packFiles[ActiveCustomFolder] = files;
+            return files;
+        }
+
+        // Find all files matching a clip key
+        static List<string> FindMatchingFiles(string clipKey)
+        {
+            string folder = Path.Combine(VoicePacksFolder, ActiveCustomFolder);
+            var packFiles = GetPackFiles(folder);
+            string state = GetState(clipKey);
+            string normalizedClipKey = Normalize(clipKey);
+
+            var stateMatches = new List<string>();
+            var rootMatches = new List<string>();
+
+            foreach (var kvp in packFiles)
+            {
+                string filePath = kvp.Key;
+                string normalizedAction = kvp.Value;
+
+                if (!normalizedClipKey.Contains(normalizedAction)) continue;
+
+                // Check if file is in a state subfolder
+                string relativePath = filePath.Substring(folder.Length).TrimStart(Path.DirectorySeparatorChar);
+                string[] pathParts = relativePath.Split(Path.DirectorySeparatorChar);
+
+                if (pathParts.Length > 1)
+                {
+                    // File is in a subfolder
+                    string subFolder = pathParts[0].ToLower();
+                    if (state != null && subFolder == state)
+                        stateMatches.Add(filePath);
+                    // Don't add to rootMatches - it's in a subfolder
+                }
+                else
+                {
+                    rootMatches.Add(filePath);
+                }
+            }
+
+            // State-specific files take priority, fall back to root
+            return stateMatches.Count > 0 ? stateMatches : rootMatches;
+        }
+
+        static bool GetSound(string filePath, out Sound sound)
+        {
+            if (!_loadedSounds.TryGetValue(ActiveCustomFolder, out var soundMap))
+            {
+                soundMap = new Dictionary<string, Sound>();
+                _loadedSounds[ActiveCustomFolder] = soundMap;
+            }
+
+            if (soundMap.TryGetValue(filePath, out sound))
+                return true;
+
+            RESULT result = RuntimeManager.CoreSystem.createSound(filePath, MODE.DEFAULT | MODE._2D, out sound);
+            if (result != RESULT.OK)
+            {
+                MelonLogger.Warning($"Failed to load custom sound {filePath}: {result}");
+                return false;
+            }
+
+            soundMap[filePath] = sound;
+            MelonLogger.Msg($"Loaded custom sound: {filePath}");
+            return true;
+        }
+
+        public static bool HasCustomSound(string simpleKey)
+        {
+            if (string.IsNullOrEmpty(ActiveCustomFolder)) return false;
+
+            string folder = Path.Combine(VoicePacksFolder, ActiveCustomFolder);
+            var packFiles = GetPackFiles(folder);
+            string normalizedKey = Normalize(simpleKey);
+
+            foreach (var normalizedAction in packFiles.Values)
+            {
+                if (normalizedKey.Contains(normalizedAction) || normalizedAction.Contains(normalizedKey))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static bool TryGetCustomSound(string clipKey, out Sound sound)
+        {
+            sound = default;
+            if (string.IsNullOrEmpty(ActiveCustomFolder)) return false;
+
+            // Check clip key cache
+            if (!_clipKeyToFiles.TryGetValue(ActiveCustomFolder, out var keyCache))
+            {
+                keyCache = new Dictionary<string, List<string>>();
+                _clipKeyToFiles[ActiveCustomFolder] = keyCache;
+            }
+
+            if (!keyCache.TryGetValue(clipKey, out var paths))
+            {
+                paths = FindMatchingFiles(clipKey);
+                keyCache[clipKey] = paths;
+            }
+
+            if (paths.Count == 0) return false;
+
+            string filePath = paths[Random.Range(0, paths.Count)];
+            return GetSound(filePath, out sound);
+        }
+
+        public static void ClearCache()
+        {
+            foreach (var soundMap in _loadedSounds.Values)
+                foreach (var snd in soundMap.Values)
+                    snd.release();
+            _loadedSounds.Clear();
+            _clipKeyToFiles.Clear();
+            _packFiles.Clear();
+            PendingSound = default;
+        }
+    }
+
+    [HarmonyPatch(typeof(CrewVoiceHandler), "PlayVoiceLine")]
+    public static class CrewVoiceHandlerSuppressPatch
+    {
+        static bool Prefix(string clipKey, ref VoiceLineReceipt __result)
+        {
+            if (string.IsNullOrEmpty(CustomVoiceManager.ActiveCustomFolder)) return true;
+            if (CustomVoiceManager.ActiveMixedVoicelines) return true;
+            if (CustomVoiceManager.HasCustomSound(clipKey)) return true;
+
+            __result = null;
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(VoicePlayer), "PlayAudioEventImmediate")]
+    public static class VoicePlayerPatch
+    {
+        static readonly FieldInfo _sourcesField = typeof(VoicePlayer)
+            .GetField("_sources", BindingFlags.NonPublic | BindingFlags.Instance);
+        static readonly FieldInfo _lastActiveRoleEventsField = typeof(VoicePlayer)
+            .GetField("_lastActiveRoleEvents", BindingFlags.NonPublic | BindingFlags.Instance);
+        static readonly FieldInfo _eventNameField = typeof(VoicePlayer)
+            .GetField("_eventName", BindingFlags.NonPublic | BindingFlags.Instance);
+        static readonly FieldInfo _voiceEventCallbackField = typeof(VoicePlayer)
+            .GetField("_voiceEventCallback", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        static bool Prefix(VoicePlayer __instance, CrewPosition role, string soundKey, bool incapacitationCheck, ref FmodEventHandle __result)
+        {
+            if (string.IsNullOrEmpty(CustomVoiceManager.ActiveCustomFolder)) return true;
+            if (!CustomVoiceManager.TryGetCustomSound(soundKey, out Sound customSound)) return true;
+
+            try
+            {
+                var sources = (ConcurrentDictionary<int, FmodEventHandle>)_sourcesField.GetValue(__instance);
+                var lastActiveRoleEvents = (FmodEventHandle[])_lastActiveRoleEventsField.GetValue(__instance);
+                string eventName = (string)_eventNameField.GetValue(__instance);
+                EVENT_CALLBACK callback = (EVENT_CALLBACK)_voiceEventCallbackField.GetValue(__instance);
+
+                FmodEventHandle handle = new FmodEventHandle(eventName, callback);
+                if (!sources.TryAdd(handle.Id, handle))
+                {
+                    handle.Dispose();
+                    __result = null;
+                    return false;
+                }
+
+                lastActiveRoleEvents[(int)role] = handle;
+                handle.SetUserData($"{handle.Id},{soundKey}");
+                CustomVoiceManager.PendingSound = customSound;
+                handle.Start();
+                __result = handle;
+                MelonLogger.Msg($"Playing custom sound for: {soundKey}");
+                return false;
+            }
+            catch (System.Exception e)
+            {
+                MelonLogger.Warning($"Custom sound playback failed: {e.Message}");
+                return true;
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(VoicePlayer), "OnVoiceEventCallback")]
+    public static class VoicePlayerCallbackPatch
+    {
+        static bool Prefix(EVENT_CALLBACK_TYPE type, System.IntPtr instancePtr, System.IntPtr paramPtr)
+        {
+            if (type != EVENT_CALLBACK_TYPE.CREATE_PROGRAMMER_SOUND) return true;
+            if (CustomVoiceManager.PendingSound.handle == System.IntPtr.Zero) return true;
+
+            Sound customSound = CustomVoiceManager.PendingSound;
+            CustomVoiceManager.PendingSound = default;
+
+            PROGRAMMER_SOUND_PROPERTIES props = (PROGRAMMER_SOUND_PROPERTIES)Marshal.PtrToStructure(paramPtr, typeof(PROGRAMMER_SOUND_PROPERTIES));
+            props.sound = customSound.handle;
+            props.subsoundIndex = -1;
+            Marshal.StructureToPtr(props, paramPtr, false);
+
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerInput), "SetPlayerUnit")]
+    public static class PlayerInputPatch
+    {
+        static void Postfix()
+        {
+            CustomVoiceManager.UpdateActiveVehicle();
+        }
+    }
+
     [HarmonyPatch(typeof(CrewVoiceHandler), "Initialize")]
     public static class VoiceHandlerPatch
     {
@@ -118,7 +456,6 @@ namespace VoiceChanger
 
         public static void CacheProtocols()
         {
-            // Fast path - search already loaded assets
             foreach (var protocol in Resources.FindObjectsOfTypeAll<VoiceProtocolDataScriptable>())
             {
                 if (_russianProtocol  == null && protocol.name.StartsWith("USSR")) _russianProtocol  = protocol;
@@ -126,7 +463,6 @@ namespace VoiceChanger
                 if (_americanProtocol == null && protocol.name.StartsWith("US"))   _americanProtocol = protocol;
             }
 
-            // Check live CrewVoiceHandlers
             foreach (var handler in Resources.FindObjectsOfTypeAll<CrewVoiceHandler>())
             {
                 var p = (VoiceProtocolDataScriptable)_protocolField.GetValue(handler);
@@ -136,7 +472,6 @@ namespace VoiceChanger
                 if (_americanProtocol == null && p.name.StartsWith("US"))   _americanProtocol = p;
             }
 
-            // If Russian still missing, load T64A prefab via Addressables to steal its protocol
             if (_russianProtocol == null)
             {
                 try
@@ -174,7 +509,6 @@ namespace VoiceChanger
         {
             var current = (VoiceProtocolDataScriptable)_protocolField.GetValue(__instance);
 
-            // Cache from live instances
             if (current != null)
             {
                 if (_russianProtocol  == null && current.name.StartsWith("USSR")) _russianProtocol  = current;
@@ -191,7 +525,10 @@ namespace VoiceChanger
                 return;
             }
 
-            VoiceProtocolDataScriptable target = entry.Value switch
+            string value = Config.GetValue(entry);
+            if (Config.IsCustomVoice(value)) return;
+
+            VoiceProtocolDataScriptable target = value switch
             {
                 "Russian"  => _russianProtocol,
                 "German"   => _germanProtocol,
@@ -199,11 +536,10 @@ namespace VoiceChanger
                 _ => null
             };
 
-            // If still null, try a fresh cache scan
             if (target == null)
             {
                 CacheProtocols();
-                target = entry.Value switch
+                target = value switch
                 {
                     "Russian"  => _russianProtocol,
                     "German"   => _germanProtocol,
@@ -214,14 +550,14 @@ namespace VoiceChanger
 
             if (target == null)
             {
-                MelonLogger.Warning($"Protocol for '{entry.Value}' not cached yet, skipping {vehicleName}");
+                MelonLogger.Warning($"Protocol for '{value}' not cached yet, skipping {vehicleName}");
                 return;
             }
 
             if (target == current) return;
 
             _protocolField.SetValue(__instance, target);
-            MelonLogger.Msg($"Set {vehicleName} -> {entry.Value} ({target.name})");
+            MelonLogger.Msg($"Set {vehicleName} -> {value} ({target.name})");
         }
     }
 }
