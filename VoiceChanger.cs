@@ -141,11 +141,7 @@ namespace VoiceChanger
         public static Sound PendingSound;
 
         static Dictionary<string, Dictionary<string, Sound>> _loadedSounds = new Dictionary<string, Dictionary<string, Sound>>();
-
-        // Cache: packFolder -> clipKey -> list of matching file paths
         static Dictionary<string, Dictionary<string, List<string>>> _clipKeyToFiles = new Dictionary<string, Dictionary<string, List<string>>>();
-
-        // Cache: packFolder -> all files in pack (path -> normalizedName)
         static Dictionary<string, Dictionary<string, string>> _packFiles = new Dictionary<string, Dictionary<string, string>>();
 
         static readonly string[] _states = { "combat", "panicked", "regular", "calm" };
@@ -192,13 +188,11 @@ namespace VoiceChanger
             MelonLogger.Msg($"Active custom voice folder: {ActiveCustomFolder}, mixed voicelines: {ActiveMixedVoicelines}");
         }
 
-        // Normalize a string for matching: lowercase, remove underscores and numbers at end
         static string Normalize(string s)
         {
             return s.ToLower().Replace("_", "");
         }
 
-        // Extract state from clip key
         static string GetState(string clipKey)
         {
             string[] parts = clipKey.Split('_');
@@ -212,12 +206,11 @@ namespace VoiceChanger
             return null;
         }
 
-        // Build index of all files in pack folder
         static Dictionary<string, string> GetPackFiles(string packFolder)
         {
             if (_packFiles.TryGetValue(ActiveCustomFolder, out var cached)) return cached;
 
-            var files = new Dictionary<string, string>(); // path -> normalizedBaseName
+            var files = new Dictionary<string, string>();
             if (!Directory.Exists(packFolder)) return files;
 
             foreach (var file in Directory.GetFiles(packFolder, "*", SearchOption.AllDirectories))
@@ -225,9 +218,7 @@ namespace VoiceChanger
                 string ext = Path.GetExtension(file).ToLower();
                 if (ext != ".wav" && ext != ".ogg") continue;
 
-                // Get base name without number suffix and extension
                 string baseName = Path.GetFileNameWithoutExtension(file);
-                // Strip trailing _N number
                 var match = System.Text.RegularExpressions.Regex.Match(baseName, @"^(.+?)(_\d+)?$");
                 string actionName = match.Groups[1].Value;
                 files[file] = Normalize(actionName);
@@ -237,7 +228,6 @@ namespace VoiceChanger
             return files;
         }
 
-        // Find all files matching a clip key
         static List<string> FindMatchingFiles(string clipKey)
         {
             string folder = Path.Combine(VoicePacksFolder, ActiveCustomFolder);
@@ -255,17 +245,14 @@ namespace VoiceChanger
 
                 if (!normalizedClipKey.Contains(normalizedAction)) continue;
 
-                // Check if file is in a state subfolder
                 string relativePath = filePath.Substring(folder.Length).TrimStart(Path.DirectorySeparatorChar);
                 string[] pathParts = relativePath.Split(Path.DirectorySeparatorChar);
 
                 if (pathParts.Length > 1)
                 {
-                    // File is in a subfolder
                     string subFolder = pathParts[0].ToLower();
                     if (state != null && subFolder == state)
                         stateMatches.Add(filePath);
-                    // Don't add to rootMatches - it's in a subfolder
                 }
                 else
                 {
@@ -273,7 +260,6 @@ namespace VoiceChanger
                 }
             }
 
-            // State-specific files take priority, fall back to root
             return stateMatches.Count > 0 ? stateMatches : rootMatches;
         }
 
@@ -300,17 +286,18 @@ namespace VoiceChanger
             return true;
         }
 
-        public static bool HasCustomSound(string simpleKey)
+        public static bool HasCustomSound(string clipKey)
         {
             if (string.IsNullOrEmpty(ActiveCustomFolder)) return false;
 
             string folder = Path.Combine(VoicePacksFolder, ActiveCustomFolder);
             var packFiles = GetPackFiles(folder);
-            string normalizedKey = Normalize(simpleKey);
+            string normalizedKey = Normalize(clipKey);
 
             foreach (var normalizedAction in packFiles.Values)
             {
-                if (normalizedKey.Contains(normalizedAction) || normalizedAction.Contains(normalizedKey))
+                // Only match if the clip key contains the file name, not the reverse
+                if (normalizedKey.Contains(normalizedAction))
                     return true;
             }
 
@@ -322,7 +309,6 @@ namespace VoiceChanger
             sound = default;
             if (string.IsNullOrEmpty(ActiveCustomFolder)) return false;
 
-            // Check clip key cache
             if (!_clipKeyToFiles.TryGetValue(ActiveCustomFolder, out var keyCache))
             {
                 keyCache = new Dictionary<string, List<string>>();
@@ -355,6 +341,20 @@ namespace VoiceChanger
 
     [HarmonyPatch(typeof(CrewVoiceHandler), "PlayVoiceLine")]
     public static class CrewVoiceHandlerSuppressPatch
+    {
+        static bool Prefix(string clipKey, ref VoiceLineReceipt __result)
+        {
+            if (string.IsNullOrEmpty(CustomVoiceManager.ActiveCustomFolder)) return true;
+            if (CustomVoiceManager.ActiveMixedVoicelines) return true;
+            if (CustomVoiceManager.HasCustomSound(clipKey)) return true;
+
+            __result = null;
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(CrewVoiceHandler), "PlayVoiceLineAtAnyFreePosition")]
+    public static class CrewVoiceHandlerSuppressAnyPositionPatch
     {
         static bool Prefix(string clipKey, ref VoiceLineReceipt __result)
         {
