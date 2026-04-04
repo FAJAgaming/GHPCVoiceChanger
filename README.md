@@ -6,6 +6,13 @@ VoiceChanger allows you to replace any crew voice line in GHPC with your own aud
 
 ---
 
+## Planned
+
+-Simpler custom sound management 
+-Ability to switch command flows on vehicles to existing ones and hopefully custom ones
+
+---
+
 ## Folder Structure
 
 Place your voice pack folder directly inside the `Mods/VoiceChanger/` folder:
