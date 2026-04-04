@@ -17,7 +17,7 @@ using GHPC.Mission;
 using GHPC.Player;
 using GHPC.Crew;
 
-[assembly: MelonInfo(typeof(VoiceChanger.VoiceChangerMod), "VoiceChanger", "1.0.0", "swarog")]
+[assembly: MelonInfo(typeof(VoiceChanger.VoiceChangerMod), "VoiceChanger", "2.0", "swarog")]
 [assembly: MelonGame("", "Gunner, HEAT, PC!")]
 
 namespace VoiceChanger
