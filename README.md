@@ -86,16 +86,23 @@ This works in state subfolders too.
 | File name | What it does |
 |-----------|-------------|
 | `gunnersabottank.wav` | "Gunner, sabot, tank!" |
-| `gunneraptank.wav` | "Gunner, AP, tank!" |
-| `gunnerheattank.wav` | "Gunner, HEAT, tank!" |
-| `gunnersabotpc.wav` | "Gunner, sabot, APC!" |
-| `gunneraptroops.wav` | "Gunner, AP, troops!" |
+| `gunnersabotpc.wav` | "Gunner, sabot, PC!" |
+| `gunnersabottroops.wav` | "Gunner, sabot, troops!" |
 | `gunnersabotat.wav` | "Gunner, sabot, AT team!" |
-| `gunnercoaxtroops.wav` | "Gunner, coax, troops!" |
-| `gunnercoaxtruck.wav` | "Gunner, coax, truck!" |
-| `gunnercoaxat.wav` | "Gunner, coax, AT team!" |
+| `gunnersabottruck.wav` | "Gunner, sabot, truck!" |
 | `gunnersabotchopper.wav` | "Gunner, sabot, chopper!" |
-
+| `gunnerheattank.wav` | "Gunner, HEAT, tank!" |
+| `gunnerheatpc.wav` | "Gunner, HEAT, PC!" |
+| `gunnerheattroops.wav` | "Gunner, HEAT, troops!" |
+| `gunnerheacat.wav` | "Gunner, HEAT, AT team!" |
+| `gunnerheattruck.wav` | "Gunner, HEAT, truck!" |
+| `gunnerhеatchopper.wav` | "Gunner, HEAT, chopper!" |
+| `gunnercoaxtank.wav` | "Gunner, coax, tank!" |
+| `gunnercoaxpc.wav` | "Gunner, coax, PC!" |
+| `gunnercoaxtroops.wav` | "Gunner, coax, troops!" |
+| `gunnercoaxat.wav` | "Gunner, coax, AT team!" |
+| `gunnercoaxtruck.wav` | "Gunner, coax, truck!" |
+| `gunnercoaxchopper.wav` | "Gunner, coax, chopper!" |
 **German** — commander calls ammo type then target type as separate lines:
 
 | File name | What it does |
