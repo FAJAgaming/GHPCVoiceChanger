@@ -134,6 +134,7 @@ These play when the commander spots a target and calls out the target type, ammo
 | `sabotup.wav` | "Sabot up!" |
 | `apup.wav` | "AP up!" |
 | `heatup.wav` | "HEAT up!" |
+| `heup.wav` | "HE up!" |
 | `missileup.wav` | "Missile up!" |
 | `sabotready.wav` | "Sabot ready!" |
 | `identified.wav` | Loader identification callout |
