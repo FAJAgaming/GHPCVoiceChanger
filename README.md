@@ -73,7 +73,8 @@ This works in state subfolders too.
 ## All Supported File Names
 
 ### Commander Target Callout
-These play when the commander spots a target and calls out the target type, ammo to load and direction. The file name is built from ammo type + target type:
+
+**American** — commander calls everything in one combined line:
 
 | File name | What it does |
 |-----------|-------------|
@@ -88,71 +89,128 @@ These play when the commander spots a target and calls out the target type, ammo
 | `gunnercoaxat.wav` | "Gunner, coax, AT team!" |
 | `gunnersabotchopper.wav` | "Gunner, sabot, chopper!" |
 
+**German** — commander calls ammo type then target type as separate lines:
+
+| File name | What it does |
+|-----------|-------------|
+| `sabot.wav` | "Sabot!" |
+| `ap.wav` | "AP!" |
+| `heat.wav` | "HEAT!" |
+| `he.wav` | "HE!" |
+| `coax.wav` | "Coax!" |
+| `tank.wav` | "Tank!" |
+| `pc.wav` | "APC!" |
+| `troops.wav` | "Troops!" |
+| `at.wav` | "AT team!" |
+| `truck.wav` | "Truck!" |
+| `chopper.wav` | "Chopper!" |
+
+**Soviet** — commander calls ammo type, direction, then target type as separate lines:
+
+| File name | What it does |
+|-----------|-------------|
+| `sabot.wav` | "Sabot!" |
+| `ap.wav` | "AP!" |
+| `heat.wav` | "HEAT!" |
+| `he.wav` | "HE!" |
+| `coax.wav` | "Coax!" |
+| `tank.wav` | "Tank!" |
+| `pc.wav` | "APC!" |
+| `troops.wav` | "Troops!" |
+| `at.wav` | "AT team!" |
+| `truck.wav` | "Truck!" |
+| `chopper.wav` | "Chopper!" |
+| `direction_30.wav` | Direction 30 (straight ahead) |
+| `direction_25.wav` | Direction 25 |
+| `direction_35.wav` | Direction 35 |
+| `direction_20.wav` | Direction 20 |
+| `direction_40.wav` | Direction 40 |
+| `direction_15.wav` | Direction 15 |
+| `direction_45.wav` | Direction 45 |
+| `direction_10.wav` | Direction 10 |
+| `direction_50.wav` | Direction 50 |
+| `direction_5.wav` | Direction 5 |
+| `direction_55.wav` | Direction 55 |
+| `direction_60.wav` | Direction 60 (directly behind) |
+
+---
+
 ### Fire Command
 
 | File name | What it does |
 |-----------|-------------|
 | `fire.wav` | "Fire!" (same ammo already loaded) |
-| `firesabot.wav` | "Fire sabot!" (switching to sabot) |
-| `fireap.wav` | "Fire AP!" (switching to AP) |
-| `fireheat.wav` | "Fire HEAT!" (switching to HEAT) |
-| `on.wav` | "On!" (on target) |
-| `steady.wav` | "Steady!" (gunner is steady on target) |
-| `traverseleft.wav` | "Left!" (traverse left) |
-| `traverseright.wav` | "Right!" (traverse right) |
+| `firesabot.wav` | "Fire sabot!" — American only, when switching to sabot |
+| `fireap.wav` | "Fire AP!" — American only, when switching to AP |
+| `fireheat.wav` | "Fire HEAT!" — American only, when switching to HEAT |
+| `on.wav` | "On!" (on target) — American only |
+| `steady.wav` | "Steady!" (gunner is steady on target) — American only |
+| `traverseleft.wav` | "Left!" (traverse left) — American only |
+| `traverseright.wav` | "Right!" (traverse right) — American only |
 | `obstructed.wav` | Shot is obstructed |
-| `relase.wav` | "Re-lase!" (laser rangefinder again) |
+| `relase.wav` | "Re-lase!" (laser rangefinder again) — American only |
+
+---
 
 ### Gunner Lines
 
 | File name | What it does |
 |-----------|-------------|
 | `ontheway.wav` | "On the way!" after firing |
-| `identified.wav` | "Identified!" |
-| `id.wav` | Short identification callout |
+| `identified.wav` | "Identified!" after spotting target |
+| `id.wav` | Short identification callout — American only |
+
+---
 
 ### Round Sensing
 
 | File name | What it does |
 |-----------|-------------|
+| `target.wav` | "Target!" — plays when a round hits |
 | `short.wav` | "Short!" round fell short |
 | `over.wav` | "Over!" round went over |
 | `doubtful.wav` | "Doubtful!" hit unclear |
-| `target.wav` | "Target!" |
-| `reengage.wav` | "Reengage!" |
-| `nexttarget.wav` | "Next target!" |
-| `ceasefire.wav` | "Cease fire!" |
-| `targetceasefire.wav` | "Target, cease fire!" |
-| `ceasetracking.wav` | "Cease tracking!" |
-| `tracking.wav` | "Tracking!" (guiding missile) |
-| `lost.wav` | "Lost!" (target lost) |
+| `reengage.wav` | "Reengage!" — plays after a hit if target still alive (American and German only) |
+| `nexttarget.wav` | "Next target!" — American and German only |
+| `ceasefire.wav` | "Cease fire!" target destroyed |
+| `targetceasefire.wav` | "Target, cease fire!" — American only |
+| `ceasetracking.wav` | "Cease tracking!" — American only |
+| `tracking.wav` | "Tracking!" guiding a missile — American only |
+| `lost.wav` | "Lost!" target lost |
+
+---
 
 ### Loader Lines
 
 | File name | What it does |
 |-----------|-------------|
-| `up.wav` | "Up!" (round loaded, ready to fire) |
-| `sabotup.wav` | "Sabot up!" |
-| `apup.wav` | "AP up!" |
-| `heatup.wav` | "HEAT up!" |
-| `heup.wav` | "HE up!" |
-| `missileup.wav` | "Missile up!" |
-| `sabotready.wav` | "Sabot ready!" |
-| `identified.wav` | Loader identification callout |
-| `empty.wav` | "Empty!" ammo depleted |
-| `az.wav` | Autoloader AZ carousel cycling |
-| `mz.wav` | Autoloader MZ cycling |
+| `up.wav` | "Up!" round is loaded and ready |
+| `sabotup.wav` | "Sabot up!" after reloading sabot — American only |
+| `apup.wav` | "AP up!" after reloading AP — American only |
+| `heatup.wav` | "HEAT up!" after reloading HEAT — American only |
+| `heup.wav` | "HE up!" after reloading HE — American only |
+| `missileup.wav` | "Missile up!" after reloading missile — American only |
+| `sabotready.wav` | "Sabot ready!" — American only |
+| `empty.wav` | "Empty!" no ammo left — German and Soviet only |
+| `az.wav` | Autoloader AZ carousel cycling — Soviet only |
+| `mz.wav` | Autoloader MZ cycling — Soviet only |
+
+---
 
 ### Last Round Warning
 
 | File name | What it does |
 |-----------|-------------|
-| `lastsabot.wav` | "Last sabot!" |
-| `lastap.wav` | "Last AP!" |
-| `lastheat.wav` | "Last HEAT!" |
-| `lastmissile.wav` | "Last missile!" |
+| `lastsabot.wav` | "Last sabot!" — American only |
+| `lastap.wav` | "Last AP!" — American only |
+| `lastheat.wav` | "Last HEAT!" — American only |
+| `lastmissile.wav` | "Last missile!" — American only |
+
+---
 
 ### Ammo Ready Callouts
+
+These play at mission start when the crew announces what round is loaded:
 
 | File name | What it does |
 |-----------|-------------|
@@ -162,6 +220,8 @@ These play when the commander spots a target and calls out the target type, ammo
 | `readymissile.wav` | "Missile ready!" |
 | `readyhe.wav` | "HE ready!" |
 | `readycoax.wav` | "Coax ready!" |
+
+---
 
 ### Crew Events
 
