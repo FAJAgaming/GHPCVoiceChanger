@@ -103,6 +103,7 @@ This works in state subfolders too.
 | `gunnercoaxat.wav` | "Gunner, coax, AT team!" |
 | `gunnercoaxtruck.wav` | "Gunner, coax, truck!" |
 | `gunnercoaxchopper.wav` | "Gunner, coax, chopper!" |
+
 **German** — commander calls ammo type then target type as separate lines:
 
 | File name | What it does |
