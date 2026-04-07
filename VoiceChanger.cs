@@ -17,7 +17,7 @@ using GHPC.Mission;
 using GHPC.Player;
 using GHPC.Crew;
 
-[assembly: MelonInfo(typeof(VoiceChanger.VoiceChangerMod), "VoiceChanger", "2.0", "swarog")]
+[assembly: MelonInfo(typeof(VoiceChanger.VoiceChangerMod), "VoiceChanger", "1.0.0", "swarog")]
 [assembly: MelonGame("", "Gunner, HEAT, PC!")]
 
 namespace VoiceChanger
@@ -39,98 +39,112 @@ namespace VoiceChanger
     }
 
     public static class Config
+{
+    static MelonPreferences_Category _cat;
+    public static Dictionary<string, MelonPreferences_Entry<string>> VehicleMap = new Dictionary<string, MelonPreferences_Entry<string>>();
+    public static Dictionary<string, MelonPreferences_Entry<bool>> MixedVoicelinesMap = new Dictionary<string, MelonPreferences_Entry<bool>>();
+
+    static void Add(string key, string defaultNationality, string displayName, string sectionComment = null)
     {
-        static MelonPreferences_Category _cat;
-        public static Dictionary<string, MelonPreferences_Entry<string>> VehicleMap = new Dictionary<string, MelonPreferences_Entry<string>>();
-        public static Dictionary<string, MelonPreferences_Entry<bool>> MixedVoicelinesMap = new Dictionary<string, MelonPreferences_Entry<bool>>();
+        var entry = _cat.CreateEntry(key, defaultNationality, displayName);
+        entry.Comment = "Russian, German, American, or a custom voice pack folder name";
+        if (sectionComment != null)
+            entry.Description = sectionComment;
+        VehicleMap[key] = entry;
 
-        static void Add(string key, string defaultNationality, string description)
-        {
-            var entry = _cat.CreateEntry(key, defaultNationality, description);
-            VehicleMap[key] = entry;
-            var mixed = _cat.CreateEntry(key + "_MixedVoicelines", true, description + " Mixed Voicelines");
-            MixedVoicelinesMap[key] = mixed;
-        }
-
-        public static bool IsCustomVoice(string value)
-        {
-            string v = value.Trim('"');
-            return v != "Russian" && v != "German" && v != "American";
-        }
-
-        public static string GetValue(MelonPreferences_Entry<string> entry)
-        {
-            return entry.Value.Trim('"');
-        }
-
-        public static bool GetMixedVoicelines(string key)
-        {
-            if (MixedVoicelinesMap.TryGetValue(key, out var entry))
-                return entry.Value;
-            return true;
-        }
-
-        public static void Init()
-        {
-            _cat = MelonPreferences.CreateCategory("GHPCVoiceChanger", "VoiceChanger - Vehicle Voice Settings");
-            string R = "Russian", G = "German", A = "American";
-
-            Add("T72",               G, "T-72");
-            Add("T72M",              G, "T-72M (NVA)");
-            Add("T72M1",             G, "T-72M1 (NVA)");
-            Add("T72GILLS",          G, "T-72 Gill (NVA)");
-            Add("T72UV1",            G, "T-72 Ural V1 (NVA)");
-            Add("T72UV2",            G, "T-72 Ural V2 (NVA)");
-            Add("T72ULEM",           G, "T-72 Ural LEM (NVA)");
-            Add("T64A",              R, "T-64A");
-            Add("T64A74",            R, "T-64A (1974)");
-            Add("T64A79",            R, "T-64A (1979)");
-            Add("T64A81",            R, "T-64A (1981)");
-            Add("T64A84",            R, "T-64A (1984)");
-            Add("T64B",              R, "T-64B");
-            Add("T64B81",            R, "T-64B (1981)");
-            Add("T64B181",           R, "T-64B1 (1981)");
-            Add("T64B1",             R, "T-64B1");
-            Add("T64R",              R, "T-64R");
-            Add("T62",               R, "T-62");
-            Add("T55A",              G, "T-55A (NVA)");
-            Add("T54A",              G, "T-54A (NVA)");
-            Add("T34-85",            G, "T-34-85 (NVA)");
-            Add("T80B",              R, "T-80B");
-            Add("BMP1",              G, "BMP-1 (NVA)");
-            Add("BMP1P",             G, "BMP-1P (NVA)");
-            Add("BMP1P_SA",          R, "BMP-1P (Soviet)");
-            Add("BMP2",              G, "BMP-2 (NVA)");
-            Add("BMP2_SA",           R, "BMP-2 (Soviet)");
-            Add("PT76B",             G, "PT-76B (NVA)");
-            Add("LEO1A1",            G, "Leopard 1A1");
-            Add("LEO1A1A1",          G, "Leopard 1A1A1");
-            Add("LEO1A1A2",          G, "Leopard 1A1A2");
-            Add("LEO1A1A3",          G, "Leopard 1A1A3");
-            Add("LEO1A1A4",          G, "Leopard 1A1A4");
-            Add("LEO1A3",            G, "Leopard 1A3");
-            Add("LEO1A3A1",          G, "Leopard 1A3A1");
-            Add("LEO1A3A2",          G, "Leopard 1A3A2");
-            Add("LEO1A3A3",          G, "Leopard 1A3A3");
-            Add("LEO1A4",            G, "Leopard 1A4");
-            Add("MARDERA1PLUS",      G, "Marder A1+");
-            Add("MARDERA1",          G, "Marder A1-");
-            Add("MARDERA1_NO_ATGM",  G, "Marder A1 (no ATGM)");
-            Add("MARDER1A2",         G, "Marder 1A2");
-            Add("M1",                A, "M1 Abrams");
-            Add("M1IP",              A, "M1IP Abrams");
-            Add("M60A1",             A, "M60A1");
-            Add("M60A1AOS",          A, "M60A1 AOS");
-            Add("M60A1RISEP",        A, "M60A1 RISE Passive");
-            Add("M60A1RISEP77",      A, "M60A1 RISE Passive (1977)");
-            Add("M60A3",             A, "M60A3");
-            Add("M60A3TTS",          A, "M60A3 TTS");
-            Add("M2BRADLEY",         A, "M2 Bradley");
-            Add("M2BRADLEY(ALT)",    A, "M2 Bradley (Alt loadout)");
-
-            MelonPreferences.Save();
-        }
+        var mixed = _cat.CreateEntry(key + "_MixedVoicelines", true, displayName + " Mixed Voicelines");
+        mixed.Comment = "true = play vanilla voice lines when no custom file found | false = silence when no custom file found";
+        MixedVoicelinesMap[key] = mixed;
     }
+
+    public static bool IsCustomVoice(string value)
+    {
+        string v = value.Trim('"');
+        return v != "Russian" && v != "German" && v != "American";
+    }
+
+    public static string GetValue(MelonPreferences_Entry<string> entry)
+    {
+        return entry.Value.Trim('"');
+    }
+
+    public static bool GetMixedVoicelines(string key)
+    {
+        if (MixedVoicelinesMap.TryGetValue(key, out var entry))
+            return entry.Value;
+        return true;
+    }
+
+    public static void Init()
+    {
+        _cat = MelonPreferences.CreateCategory("GHPCVoiceChanger", "VoiceChanger - Vehicle Voice Settings");
+        string R = "Russian", G = "German", A = "American";
+
+        string howTo = "To use a custom voice pack, create a folder in Mods/VoiceChanger/ that's your voice pack, in it create three folders for  three different crew states 'panic', 'regular' and 'combat', drop your audio files with the correct names in those folders (the names are listed on the github page) and set the value below to the folder name.";
+
+        // USSR
+        Add("T72",               G, "T-72",               howTo + "\n\n# === USSR ===");
+        Add("T64A",              R, "T-64A");
+        Add("T64A74",            R, "T-64A (1974)");
+        Add("T64A79",            R, "T-64A (1979)");
+        Add("T64A81",            R, "T-64A (1981)");
+        Add("T64A84",            R, "T-64A (1984)");
+        Add("T64B",              R, "T-64B");
+        Add("T64B81",            R, "T-64B (1981)");
+        Add("T64B181",           R, "T-64B1 (1981)");
+        Add("T64B1",             R, "T-64B1");
+        Add("T64R",              R, "T-64R");
+        Add("T62",               R, "T-62");
+        Add("T80B",              R, "T-80B");
+        Add("BMP1P_SA",          R, "BMP-1P (Soviet)");
+        Add("BMP2_SA",           R, "BMP-2 (Soviet)");
+
+        // East Germany
+        Add("T72M",              G, "T-72M (NVA)",         "\n# === East Germany ===");
+        Add("T72M1",             G, "T-72M1 (NVA)");
+        Add("T72GILLS",          G, "T-72 Gill (NVA)");
+        Add("T72UV1",            G, "T-72 Ural V1 (NVA)");
+        Add("T72UV2",            G, "T-72 Ural V2 (NVA)");
+        Add("T72ULEM",           G, "T-72 Ural LEM (NVA)");
+        Add("T55A",              G, "T-55A (NVA)");
+        Add("T54A",              G, "T-54A (NVA)");
+        Add("T34-85",            G, "T-34-85 (NVA)");
+        Add("BMP1",              G, "BMP-1 (NVA)");
+        Add("BMP1P",             G, "BMP-1P (NVA)");
+        Add("BMP2",              G, "BMP-2 (NVA)");
+        Add("PT76B",             G, "PT-76B (NVA)");
+
+        // West Germany
+        Add("LEO1A1",            G, "Leopard 1A1",         "\n# === West Germany ===");
+        Add("LEO1A1A1",          G, "Leopard 1A1A1");
+        Add("LEO1A1A2",          G, "Leopard 1A1A2");
+        Add("LEO1A1A3",          G, "Leopard 1A1A3");
+        Add("LEO1A1A4",          G, "Leopard 1A1A4");
+        Add("LEO1A3",            G, "Leopard 1A3");
+        Add("LEO1A3A1",          G, "Leopard 1A3A1");
+        Add("LEO1A3A2",          G, "Leopard 1A3A2");
+        Add("LEO1A3A3",          G, "Leopard 1A3A3");
+        Add("LEO1A4",            G, "Leopard 1A4");
+        Add("MARDERA1PLUS",      G, "Marder A1+");
+        Add("MARDERA1",          G, "Marder A1-");
+        Add("MARDERA1_NO_ATGM",  G, "Marder A1 (no ATGM)");
+        Add("MARDER1A2",         G, "Marder 1A2");
+
+        // USA
+        Add("M1",                A, "M1 Abrams",           "\n# === USA ===");
+        Add("M1IP",              A, "M1IP Abrams");
+        Add("M60A1",             A, "M60A1");
+        Add("M60A1AOS",          A, "M60A1 AOS");
+        Add("M60A1RISEP",        A, "M60A1 RISE Passive");
+        Add("M60A1RISEP77",      A, "M60A1 RISE Passive (1977)");
+        Add("M60A3",             A, "M60A3");
+        Add("M60A3TTS",          A, "M60A3 TTS");
+        Add("M2BRADLEY",         A, "M2 Bradley");
+        Add("M2BRADLEY(ALT)",    A, "M2 Bradley (Alt loadout)");
+
+        MelonPreferences.Save();
+    }
+}
 
     public static class CustomVoiceManager
     {
@@ -296,7 +310,6 @@ namespace VoiceChanger
 
             foreach (var normalizedAction in packFiles.Values)
             {
-                // Only match if the clip key contains the file name, not the reverse
                 if (normalizedKey.Contains(normalizedAction))
                     return true;
             }
@@ -346,8 +359,8 @@ namespace VoiceChanger
         {
             if (string.IsNullOrEmpty(CustomVoiceManager.ActiveCustomFolder)) return true;
             if (CustomVoiceManager.ActiveMixedVoicelines) return true;
+            MelonLogger.Msg($"PlayVoiceLine: {clipKey}");
             if (CustomVoiceManager.HasCustomSound(clipKey)) return true;
-
             __result = null;
             return false;
         }
@@ -360,9 +373,25 @@ namespace VoiceChanger
         {
             if (string.IsNullOrEmpty(CustomVoiceManager.ActiveCustomFolder)) return true;
             if (CustomVoiceManager.ActiveMixedVoicelines) return true;
+            MelonLogger.Msg($"PlayVoiceLineAtAnyFreePosition: {clipKey}");
             if (CustomVoiceManager.HasCustomSound(clipKey)) return true;
-
             __result = null;
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(VoicePlayer), "PlayAudioEvent")]
+    public static class VoicePlayerPlayAudioEventPatch
+    {
+        static bool Prefix(CrewPosition crew, string eventKey, ref VoiceLineReceipt __result)
+        {
+            MelonLogger.Msg($"PlayAudioEvent: {eventKey}");
+            if (string.IsNullOrEmpty(CustomVoiceManager.ActiveCustomFolder)) return true;
+            if (CustomVoiceManager.ActiveMixedVoicelines) return true;
+            if (CustomVoiceManager.TryGetCustomSound(eventKey, out _)) return true;
+
+            __result = VoiceLineReceipt.CompletedReceipt;
+            MelonLogger.Msg($"Suppressed vanilla: {eventKey}");
             return false;
         }
     }
